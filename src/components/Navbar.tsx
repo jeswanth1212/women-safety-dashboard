@@ -1,7 +1,14 @@
-import React from 'react';
 import { Bell, Settings, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="px-4 mx-auto">
@@ -16,7 +23,10 @@ const Navbar = () => {
             <button className="p-2 text-gray-500 hover:text-gray-600">
               <Settings className="w-6 h-6" />
             </button>
-            <button className="p-2 text-gray-500 hover:text-gray-600">
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-gray-500 hover:text-gray-600"
+            >
               <LogOut className="w-6 h-6" />
             </button>
             <div className="flex items-center">

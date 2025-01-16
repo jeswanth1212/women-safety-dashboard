@@ -1,5 +1,5 @@
-import React from 'react';
 import { Camera, Video, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Cameras = () => {
   const cameras = [
