@@ -1,82 +1,120 @@
-import { AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+interface Alert {
+  _id: string;
+  name: string;
+  phone: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  message: string;
+  timestamp: string;
+}
 
 const Alerts = () => {
-  const alerts = [
-    {
-      id: 1,
-      type: 'Motion Detection',
-      location: 'Camera #12 - Main Entrance',
-      timestamp: '2 minutes ago',
-      severity: 'high',
-      status: 'pending',
-      description: 'Unusual movement detected in restricted area'
-    },
-    {
-      id: 2,
-      type: 'Perimeter Breach',
-      location: 'Sector B - East Wing',
-      timestamp: '15 minutes ago',
-      severity: 'critical',
-      status: 'active',
-      description: 'Security fence breach detected'
-    },
-    {
-      id: 3,
-      type: 'Suspicious Activity',
-      location: 'Camera #8 - Parking Lot',
-      timestamp: '1 hour ago',
-      severity: 'medium',
-      status: 'investigating',
-      description: 'Unknown vehicle parked in restricted zone'
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const fetchAlerts = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/alerts');
+      console.log('Fetched alerts:', response.data);
+      setAlerts(response.data);
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      setError('Failed to fetch alerts');
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+    
+    // Refresh alerts every 30 seconds
+    const interval = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Attempting to delete alert:', alertId);
+      
+      const response = await axios.delete(`http://localhost:5000/api/alerts/${alertId}`);
+      console.log('Delete response:', response.data);
+      
+      // Refresh the alerts list after successful deletion
+      await fetchAlerts();
+      console.log('Alerts refreshed after deletion');
+    } catch (error: any) {
+      console.error('Error resolving alert:', error);
+      setError(error.response?.data?.error || 'Failed to resolve alert');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocatePerson = (latitude: number, longitude: number) => {
+    navigate('/maps', { state: { centerLocation: { latitude, longitude } } });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Alert Management</h2>
-        <div className="flex space-x-3">
-          <select className="bg-white border border-gray-300 rounded-md px-4 py-2">
-            <option>All Alerts</option>
-            <option>Critical</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="p-4">
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl font-semibold mb-6">Emergency Alerts</h1>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        <div className="grid gap-4">
           {alerts.map((alert) => (
-            <div key={alert.id} className="border-b last:border-0 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-2 bg-red-100 rounded-full">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{alert.type}</h3>
-                    <p className="text-sm text-gray-500">{alert.location}</p>
-                    <p className="text-sm text-gray-500">{alert.timestamp}</p>
+            <div key={alert._id} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-start">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-semibold">{alert.name}</h2>
+                  <p className="text-gray-600">{alert.phone}</p>
+                  <p className="text-red-600 font-medium">{alert.message}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Location: {alert.location.latitude}, {alert.location.longitude}
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => handleResolveAlert(alert._id)}
+                      disabled={loading}
+                      className={`px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors ${
+                        loading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {loading ? 'Resolving...' : 'SOS Resolved'}
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    >
+                      Contact Person
+                    </button>
+                    <button
+                      onClick={() => handleLocatePerson(alert.location.latitude, alert.location.longitude)}
+                      className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                    >
+                      Locate Person
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                    alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                  </span>
-                  <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100">
-                    View Details
-                  </button>
+                <div className="text-sm text-gray-500">
+                  {new Date(alert.timestamp).toLocaleString()}
                 </div>
               </div>
-              <p className="mt-2 text-gray-600">{alert.description}</p>
             </div>
           ))}
+          {alerts.length === 0 && (
+            <p className="text-gray-500 text-center py-4">No alerts found</p>
+          )}
         </div>
       </div>
     </div>

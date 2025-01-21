@@ -1,7 +1,14 @@
 import React from 'react';
-import { AlertTriangle, Clock, CheckCircle, AlertOctagon } from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle, AlertOctagon, LucideIcon } from 'lucide-react';
 
-const StatCard = ({ icon: Icon, label, value, color }) => (
+interface StatCardProps {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  color: string;
+}
+
+const StatCard = ({ icon: Icon, label, value, color }: StatCardProps) => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <div className="flex items-center">
       <div className={`p-3 rounded-full ${color} bg-opacity-10 mr-4`}>

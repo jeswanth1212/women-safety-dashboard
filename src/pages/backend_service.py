@@ -19,32 +19,31 @@ CLIENT = InferenceHTTPClient(
 )
 
 # Global variables
-PROCESS_NTH_FRAME = 1  # Process every frame to keep up with video speed
-frame_queue = Queue(maxsize=2)
-result_queue = Queue(maxsize=2)
+PROCESS_NTH_FRAME = 1  # Process every frame for real-time detection
+frame_queue = Queue(maxsize=30)  # Larger queue for smoother processing
+result_queue = Queue(maxsize=30)
 should_process = True
-last_predictions = []  # Global to store last predictions
+last_predictions = []
 
 def process_frame_ml(frame):
     try:
+        # Optimize frame size for API
+        frame = cv2.resize(frame, (416, 416))  # Standard size for faster processing
+        
         # Convert frame to BGR format if needed
         if len(frame.shape) == 2:
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         elif frame.shape[2] == 4:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
             
-        # Convert to jpg and then base64
-        _, buffer = cv2.imencode('.jpg', frame)
+        # Optimize JPEG quality for faster upload
+        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
         img_str = base64.b64encode(buffer).decode('utf-8')
         
         # Send to Roboflow API
         result = CLIENT.infer(img_str, model_id="weapon-detection-f1lih-zelr4/1")
         
-        if 'predictions' in result:
-            predictions = result['predictions']
-            return predictions
-        else:
-            return []
+        return result.get('predictions', [])
             
     except Exception as e:
         return []
@@ -56,11 +55,12 @@ def ml_processor():
             if not frame_queue.empty():
                 frame = frame_queue.get_nowait()
                 predictions = process_frame_ml(frame)
-                if predictions is not None and len(predictions) > 0:
+                if predictions:
                     last_predictions = predictions
-        except Exception as e:
+            else:
+                time.sleep(0.001)  # Minimal sleep when queue is empty
+        except:
             pass
-        time.sleep(0.001)
 
 def draw_predictions(frame, predictions):
     if not predictions:
@@ -122,40 +122,34 @@ def generate_frames():
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
             
-            # Queue frame for ML processing if it's the nth frame
-            if frame_count % PROCESS_NTH_FRAME == 0:
-                try:
-                    if not frame_queue.full():
-                        frame_queue.put_nowait(np.copy(frame))
-                except Exception as e:
-                    pass
+            # Queue frame for ML processing
+            try:
+                if not frame_queue.full():
+                    frame_queue.put_nowait(np.copy(frame))
+            except:
+                pass
             
             # Draw predictions on frame
             if last_predictions:
                 frame = draw_predictions(frame, last_predictions)
             
-            # Encode frame with lower quality for speed
-            ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+            # Optimize frame encoding
+            ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             frame_bytes = buffer.tobytes()
             
-            # Calculate time spent processing
+            # Maintain video speed
             processing_time = time.time() - loop_start
-            
-            # Sleep if we're ahead of schedule
             if processing_time < frame_time:
-                time.sleep(frame_time - processing_time)
+                time.sleep(max(0, frame_time - processing_time))
             
             frame_count += 1
             
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                   
     except Exception as e:
-        pass
+        cap.release()
     finally:
         should_process = False
-        if 'cap' in locals():
-            cap.release()
 
 @app.route('/video_feed')
 def video_feed():
