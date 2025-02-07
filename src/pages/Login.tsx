@@ -3,11 +3,11 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -21,15 +21,11 @@ const Login = () => {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/login', { username, password });
-      localStorage.setItem('token', response.data.token);
+      // Simulate successful login by storing a dummy token
+      localStorage.setItem('token', 'dummy-token');
       navigate('/');
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        setError(error.response?.data || 'Login failed');
-      } else {
-        setError('An unexpected error occurred');
-      }
+      setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }

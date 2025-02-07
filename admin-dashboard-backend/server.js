@@ -37,16 +37,28 @@ const alerts = [];
 
 // Endpoint to handle incoming alert requests
 app.post('/alerts', (req, res) => {
-  const { name, phone, location, message } = req.body;
-  const alert = { name, phone, location, message };
+  const { name, phone, location, message, age } = req.body;
+  const alert = { id: alerts.length + 1, name, phone, location, message, age, timestamp: new Date().toISOString() };
   alerts.push(alert);
-  console.log(`Alert received: ${name}, ${phone}, ${location}`);
+  console.log(`Alert received: ${name}, ${phone}, ${location.latitude}, ${location.longitude}, Age: ${age}`);
   res.status(200).send('Alert received');
 });
 
 // Endpoint to return stored alerts
 app.get('/alerts', (req, res) => {
   res.json(alerts);
+});
+
+// Endpoint to delete an alert
+app.delete('/alerts/:id', (req, res) => {
+  const { id } = req.params;
+  const alertIndex = alerts.findIndex(alert => alert.id === parseInt(id));
+  if (alertIndex !== -1) {
+    alerts.splice(alertIndex, 1);
+    res.status(200).send('Alert deleted');
+  } else {
+    res.status(404).send('Alert not found');
+  }
 });
 
 // Add this new endpoint

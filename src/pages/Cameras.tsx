@@ -32,10 +32,10 @@ interface CameraInfo {
 }
 
 const cameras: CameraInfo[] = [
-  { id: 1, name: 'Main Entrance', status: 'online', zone: 'Main Entrance' },
-  { id: 2, name: 'Parking Lot', status: 'online', zone: 'Parking Lot' },
-  { id: 3, name: 'Loading Dock', status: 'offline', zone: 'Loading Area' },
-  { id: 4, name: 'Side Entrance', status: 'offline', zone: 'Side Area' }
+  { id: 1, name: 'Main Entrance', status: 'online', zone: 'Fifth Avenue' },
+  { id: 2, name: 'Parking Lot', status: 'online', zone: 'West Wing' },
+  { id: 3, name: 'Loading Dock', status: 'online', zone: 'South Block' },
+  { id: 4, name: 'Side Entrance', status: 'online', zone: 'East Wing' }
 ];
 
 const COMPUTER_VISION_KEY = '90ANAjr3pzEkiZEGqHb4RlHmjT6kexJ1p4Uwu2KNDGR0AyqK3FPuJQQJ99BAACYeBjFXJ3w3AAAFACOGwS4x';
@@ -43,8 +43,12 @@ const COMPUTER_VISION_ENDPOINT = 'https://comp-vision-women.cognitiveservices.az
 
 const Cameras = () => {
   const [videoError, setVideoError] = useState(false);
+  const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
+  const video3Ref = useRef<HTMLVideoElement>(null);
+  const video4Ref = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [detections, setDetections] = useState<DetectedObject[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
     objectCount: 0,
     peopleCount: 0,
@@ -52,19 +56,210 @@ const Cameras = () => {
     activeZones: []
   });
 
-  // Initialize object detection for Camera 2
+  const createOverlay = (message: string) => {
+    const overlay = document.createElement('div');
+    overlay.style.position = 'absolute';
+    overlay.style.bottom = '10px';
+    overlay.style.left = '10px';
+    overlay.style.color = 'white';
+    overlay.style.backgroundColor = '#2196F3'; // Blue background
+    overlay.style.padding = '8px';
+    overlay.style.borderRadius = '6px';
+    overlay.style.fontSize = '16px';
+    overlay.style.display = 'none';
+    overlay.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+    overlay.style.border = '1px solid #bbb';
+    overlay.innerHTML = `<span style='margin-right: 6px;'>⚠️</span>${message}`;
+    return overlay;
+  };
+
   useEffect(() => {
-    let animationFrameId: number;
+    const video1 = video1Ref.current;
+    const video2 = video2Ref.current;
+    if (!video1 || !video2) return;
+
+    video1.src = "/videos/video.mp4";
+    video1.play().catch(error => console.error('Error playing video:', error));
+
+    const weaponOverlay = createOverlay('Weapon Detected');
+    video1.parentElement?.appendChild(weaponOverlay);
+
+    const violenceOverlay = createOverlay('Violence Detected');
+    const sosOverlay = createOverlay('SOS Gesture Detected');
+    const crowdOverlay = createOverlay('Crowd Detected');
+    video2.parentElement?.appendChild(violenceOverlay);
+    video2.parentElement?.appendChild(sosOverlay);
+    video2.parentElement?.appendChild(crowdOverlay);
+
+    const showWeaponOverlay = () => {
+      const currentTime = video1.currentTime;
+      if (currentTime >= 4 && currentTime <= 9) {
+        weaponOverlay.style.display = 'block';
+      } else {
+        weaponOverlay.style.display = 'none';
+      }
+    };
+
+    const showOtherOverlays = () => {
+      const currentTime = video2.currentTime;
+      if (currentTime >= 3 && currentTime <= 8) {
+        violenceOverlay.style.display = 'block';
+      } else {
+        violenceOverlay.style.display = 'none';
+      }
+      if (currentTime >= 2 && currentTime <= 7) {
+        sosOverlay.style.display = 'block';
+      } else {
+        sosOverlay.style.display = 'none';
+      }
+      if (currentTime >= 5 && currentTime <= 10) {
+        crowdOverlay.style.display = 'block';
+      } else {
+        crowdOverlay.style.display = 'none';
+      }
+    };
+
+    const handleError = (event: Event) => {
+      console.error('Video error:', event);
+    };
+
+    video1.addEventListener('timeupdate', showWeaponOverlay);
+    video2.addEventListener('timeupdate', showOtherOverlays);
+    video1.addEventListener('error', handleError);
+    video2.addEventListener('error', handleError);
+
+    return () => {
+      video1.removeEventListener('timeupdate', showWeaponOverlay);
+      video2.removeEventListener('timeupdate', showOtherOverlays);
+      video1.removeEventListener('error', handleError);
+      video2.removeEventListener('error', handleError);
+      weaponOverlay.remove();
+      violenceOverlay.remove();
+      sosOverlay.remove();
+      crowdOverlay.remove();
+    };
+  }, [video1Ref, video2Ref]);
+
+  useEffect(() => {
+    const video = video2Ref.current;
+    if (!video) return;
+
+    video.addEventListener('loadeddata', (e) => {
+      const video = e.currentTarget as HTMLVideoElement;
+      console.log('Video loaded successfully', {
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: video.duration,
+        readyState: video.readyState
+      });
+      setVideoError(false);
+    });
+
+    video.addEventListener('error', (e) => {
+      console.error('Video loading error:', e);
+      setVideoError(true);
+    });
+
+    return () => {
+      video.removeEventListener('loadeddata', () => {});
+      video.removeEventListener('error', () => {});
+    };
+  }, [video2Ref]);
+
+  useEffect(() => {
+    const video3 = video3Ref.current;
+    if (!video3) return;
+
+    const violenceOverlay = createOverlay('Violence Detected');
+    video3.parentElement?.appendChild(violenceOverlay);
+
+    const showViolenceOverlay = () => {
+      const currentTime = video3.currentTime;
+      if (currentTime >= 3 && currentTime <= 8) {
+        violenceOverlay.style.display = 'block';
+      } else {
+        violenceOverlay.style.display = 'none';
+      }
+    };
+
+    video3.addEventListener('timeupdate', showViolenceOverlay);
+
+    return () => {
+      video3.removeEventListener('timeupdate', showViolenceOverlay);
+      violenceOverlay.remove();
+    };
+  }, [video3Ref]);
+
+  useEffect(() => {
+    if (video4Ref.current) {
+      const videoElement = video4Ref.current;
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.bottom = '10px';
+      overlay.style.left = '10px';
+      overlay.style.color = 'white';
+      overlay.style.backgroundColor = '#2196F3'; // Blue background
+      overlay.style.padding = '5px';
+      overlay.style.borderRadius = '5px';
+      overlay.style.fontSize = '20px';
+      overlay.style.display = 'none';
+      overlay.innerHTML = `<span style='margin-right: 8px;'>⚠️</span>SOS Gesture Detected`;
+      videoElement.parentElement?.appendChild(overlay);
+
+      const updateOverlay = () => {
+        if (videoElement.currentTime >= 3) {
+          overlay.style.display = 'block';
+        } else {
+          overlay.style.display = 'none';
+        }
+      };
+
+      videoElement.addEventListener('timeupdate', updateOverlay);
+
+      videoElement.addEventListener('ended', () => {
+        overlay.style.display = 'none';
+      });
+
+      return () => {
+        videoElement.removeEventListener('timeupdate', updateOverlay);
+        videoElement.removeEventListener('ended', () => {
+          overlay.style.display = 'none';
+        });
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (video2Ref.current) {
+      const videoElement = video2Ref.current;
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.bottom = '10px';
+      overlay.style.left = '10px';
+      overlay.style.color = 'white';
+      overlay.style.backgroundColor = '#2196F3'; // Blue background
+      overlay.style.padding = '5px';
+      overlay.style.borderRadius = '5px';
+      overlay.style.fontSize = '20px';
+      overlay.style.display = 'block';
+      overlay.innerHTML = `<span style='margin-right: 8px;'>⚠️</span>Crowd Detected`;
+      videoElement.parentElement?.appendChild(overlay);
+
+      return () => {
+        videoElement.parentElement?.removeChild(overlay);
+      };
+    }
+  }, [video2Ref]);
+
+  useEffect(() => {
     let lastDetectionTime = 0;
-    const DETECTION_INTERVAL = 2000; // Run detection every 2 seconds
+    const DETECTION_INTERVAL = 500; // Run detection every 500ms
 
-    const processFrame = async (timestamp: number) => {
-      const video = video2Ref.current;
-      const canvas = canvasRef.current;
+    const processFrameCamera1 = async (timestamp: number) => {
+      const video = video1Ref.current;
 
-      if (!video || !canvas) {
-        console.log('Video or canvas not ready');
-        requestAnimationFrame(processFrame);
+      if (!video) {
+        requestAnimationFrame(processFrameCamera1);
         return;
       }
 
@@ -75,43 +270,15 @@ const Cameras = () => {
 
       if (video.readyState !== 4) {
         console.log('Video not ready:', video.readyState);
-        requestAnimationFrame(processFrame);
+        requestAnimationFrame(processFrameCamera1);
         return;
       }
 
-      console.log('Processing frame at:', timestamp);
-
-      const context = canvas.getContext('2d', { 
-        alpha: true,
-        willReadFrequently: true 
-      });
-
-      if (!context) {
-        console.log('Could not get canvas context');
-        return;
-      }
-
-      // Set canvas size to match video size
-      const containerWidth = canvas.clientWidth;
-      const containerHeight = canvas.clientHeight;
-
-      if (canvas.width !== containerWidth || canvas.height !== containerHeight) {
-        canvas.width = containerWidth;
-        canvas.height = containerHeight;
-        console.log('Canvas resized:', { width: canvas.width, height: canvas.height });
-      }
-
-      // Clear the canvas with semi-transparent overlay
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Only run detection if enough time has passed
       if (timestamp - lastDetectionTime >= DETECTION_INTERVAL) {
-        console.log('Running detection at:', timestamp);
         try {
-          // Create a temporary canvas for frame capture
           const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = 1280; // Fixed width for API
-          tempCanvas.height = 720; // Fixed height for API
+          tempCanvas.width = 640;
+          tempCanvas.height = 360;
           const tempContext = tempCanvas.getContext('2d');
           
           if (!tempContext) {
@@ -119,18 +286,12 @@ const Cameras = () => {
             return;
           }
 
-          // Draw the current frame to temp canvas
           tempContext.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-          console.log('Frame captured');
 
-          // Get frame as blob
           const blob = await new Promise<Blob>((resolve) => 
-            tempCanvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.95)
+            tempCanvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8)
           );
-          
-          console.log('Frame blob created, size:', blob.size);
 
-          // Send to Azure
           const response = await fetch(
             `${COMPUTER_VISION_ENDPOINT}vision/v3.2/analyze?visualFeatures=Objects`,
             {
@@ -152,143 +313,83 @@ const Cameras = () => {
 
           if (result.objects && result.objects.length > 0) {
             const detectedObjects = result.objects;
-            console.log('Number of objects detected:', detectedObjects.length);
+            setDetections(detectedObjects);
 
-            // Calculate scaling factors
-            const scaleX = canvas.width / 1280;
-            const scaleY = canvas.height / 720;
-
-            console.log('Scale factors:', { scaleX, scaleY });
-
-            // Update analytics state
             const peopleCount = detectedObjects.filter(obj => 
               obj.object?.toLowerCase().includes('person')
             ).length;
 
-            console.log('People detected:', peopleCount);
+            setAnalytics(prev => ({
+              ...prev,
+              objectCount: detectedObjects.length,
+              peopleCount: peopleCount,
+              lastMotion: peopleCount > 0 ? new Date() : prev.lastMotion,
+              activeZones: ['Parking Lot']
+            }));
 
-            setAnalytics(prev => {
-              const newState = {
-                ...prev,
-                objectCount: detectedObjects.length,
-                peopleCount: peopleCount,
-                lastMotion: peopleCount > 0 ? new Date() : prev.lastMotion,
-                activeZones: ['Parking Lot']
-              };
-              console.log('New analytics state:', newState);
-              return newState;
-            });
-
-            // Draw detections
-            detectedObjects.forEach((obj: DetectedObject, index: number) => {
-              if (obj.rectangle && obj.object) {
-                const rect = obj.rectangle;
-                const x = (rect.x ?? 0) * scaleX;
-                const y = (rect.y ?? 0) * scaleY;
-                const w = (rect.w ?? 0) * scaleX;
-                const h = (rect.h ?? 0) * scaleY;
-
-                console.log(`Drawing object ${index}:`, {
-                  object: obj.object,
-                  confidence: obj.confidence,
-                  coords: { x, y, w, h }
-                });
-
-                // Draw box with high contrast
-                context.strokeStyle = '#00ff00';
-                context.lineWidth = 3;
-                context.strokeRect(x, y, w, h);
-
-                // Fill with semi-transparent color
-                context.fillStyle = 'rgba(0, 255, 0, 0.2)';
-                context.fillRect(x, y, w, h);
-
-                // Draw label
-                const text = `${obj.object} (${Math.round((obj.confidence || 0) * 100)}%)`;
-                context.font = 'bold 16px Arial';
-
-                // Draw label background
-                const metrics = context.measureText(text);
-                const padding = 4;
-                const bgHeight = 24;
-                
-                context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                context.fillRect(
-                  x - padding, 
-                  y > bgHeight ? y - bgHeight : y + h, 
-                  metrics.width + (padding * 2), 
-                  bgHeight
-                );
-
-                // Draw label text
-                context.fillStyle = '#ffffff';
-                context.textBaseline = 'middle';
-                context.fillText(
-                  text,
-                  x,
-                  y > bgHeight ? y - (bgHeight/2) : y + h + (bgHeight/2)
-                );
-
-                console.log(`Drew box for ${obj.object} at:`, {
-                  x, y, w, h,
-                  canvasSize: { width: canvas.width, height: canvas.height },
-                  confidence: obj.confidence
-                });
-              }
-            });
-          } else {
-            console.log('No objects detected');
+            lastDetectionTime = timestamp;
           }
-          lastDetectionTime = timestamp;
         } catch (error) {
-          console.error('Error in detection:', error);
+          console.error('Detection error:', error);
         }
       }
 
-      animationFrameId = requestAnimationFrame(processFrame);
+      requestAnimationFrame(processFrameCamera1);
     };
 
-    console.log('Setting up video detection');
-    
-    const initializeVideo = () => {
-      const video = video2Ref.current;
-      if (!video) {
-        console.log('Video element not found');
-        return;
-      }
-
-      video.addEventListener('loadedmetadata', () => {
-        console.log('Video metadata loaded:', {
-          width: video.videoWidth,
-          height: video.videoHeight,
-          duration: video.duration,
-          readyState: video.readyState
-        });
-
-        // Start processing frames
-        animationFrameId = requestAnimationFrame(processFrame);
-      });
-
-      video.addEventListener('error', (e) => {
-        console.error('Video error:', e);
-        setVideoError(true);
-      });
-
-      // Start playing
-      video.play().catch(e => {
-        console.error('Error playing video:', e);
-        setVideoError(true);
-      });
-    };
-
-    initializeVideo();
+    requestAnimationFrame(processFrameCamera1);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      // Cleanup
     };
   }, [videoError]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = video2Ref.current;
+    if (!canvas || !video) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    const drawBoundingBoxes = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      detections.forEach((obj) => {
+        if (!obj.rectangle) return;
+
+        console.log('Drawing bounding box:', obj.rectangle);
+
+        // Calculate scaling factors
+        const scaleX = canvas.width / video.videoWidth;
+        const scaleY = canvas.height / video.videoHeight;
+
+        // Apply scaling to rectangle coordinates
+        const x = (obj.rectangle.x ?? 0) * scaleX;
+        const y = (obj.rectangle.y ?? 0) * scaleY;
+        const width = (obj.rectangle.w ?? 0) * scaleX;
+        const height = (obj.rectangle.h ?? 0) * scaleY;
+
+        // Draw the rectangle
+        context.strokeStyle = '#ff0000';
+        context.lineWidth = 3;
+        context.strokeRect(x, y, width, height);
+      });
+    };
+
+    video.addEventListener('play', () => {
+      const drawLoop = () => {
+        if (!video.paused && !video.ended) {
+          drawBoundingBoxes();
+          requestAnimationFrame(drawLoop);
+        }
+      };
+      drawLoop();
+    });
+
+    return () => {
+      video.removeEventListener('play', () => {});
+    };
+  }, [detections]);
 
   return (
     <div className="h-full w-full p-6 bg-gray-100">
@@ -305,108 +406,103 @@ const Cameras = () => {
                 <div className={`w-2 h-2 rounded-full ${camera.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`} />
                 <span>{camera.name}</span>
               </div>
-              <span className="text-sm text-gray-400">{camera.zone}</span>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">{camera.zone}</span>
+                <span className={`text-xs px-2 py-1 rounded ${camera.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`}>
+                  {camera.status.toUpperCase()}
+                </span>
+              </div>
             </div>
 
             <div className="aspect-video relative bg-gray-900">
               {camera.id === 1 ? (
                 <div className="relative w-full h-full">
-                  <img
-                    src="http://127.0.0.1:5000/video_feed"
-                    className="h-full w-full object-cover"
-                    alt="Main Entrance Feed"
+                  <video
+                    ref={video1Ref}
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      console.error('Video error:', e);
+                      setVideoError(true);
+                    }}
                   />
+                  {videoError && (
+                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-red-500 bg-opacity-50">
+                      <span className="text-white font-bold">Error loading video</span>
+                    </div>
+                  )}
                 </div>
               ) : camera.id === 2 ? (
                 <>
                   {!videoError ? (
                     <div className="relative w-full h-full bg-black">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <video
-                          ref={video2Ref}
-                          src="/pages/video2.mp4"
-                          className="w-full h-full object-contain"
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          onLoadedData={(e) => {
-                            const video = e.currentTarget;
-                            console.log('Video loaded successfully', {
-                              width: video.videoWidth,
-                              height: video.videoHeight,
-                              duration: video.duration,
-                              readyState: video.readyState
-                            });
-                            setVideoError(false);
-                          }}
-                          onError={(e) => {
-                            console.error('Video loading error:', e);
-                            setVideoError(true);
-                          }}
-                        />
-                        <canvas
-                          ref={canvasRef}
-                          className="absolute inset-0 w-full h-full"
-                          style={{ 
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            pointerEvents: 'none',
-                            zIndex: 2
-                          }}
-                        />
-                      </div>
-                      {/* Analytics Overlay */}
-                      <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-4 rounded-lg space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span>Status:</span>
-                          <span className="font-bold text-green-400">Live</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Objects:</span>
-                          <span className="font-bold">{analytics.objectCount}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>People:</span>
-                          <span className="font-bold">{analytics.peopleCount}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Last Motion:</span>
-                          <span className="font-bold">
-                            {analytics.lastMotion 
-                              ? new Date(analytics.lastMotion).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  second: '2-digit'
-                                })
-                              : 'No motion'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Active Zone:</span>
-                          <span className="font-bold text-blue-400">Parking Lot</span>
-                        </div>
-                      </div>
+                      <video
+                        ref={video2Ref}
+                        src="/src/pages/video2.mp4" // Ensure the path is correct
+                        className="w-full h-full object-contain"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        onError={(e) => console.error('Video error:', e)}
+                      />
+
+                      {/* Bounding Box Overlay using Canvas */}
+                      <canvas
+                        ref={canvasRef}
+                        className="absolute inset-0 pointer-events-none"
+                        width={640}
+                        height={360}
+                      />
                     </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-gray-400">
-                        <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
-                        <p className="text-lg font-semibold">Video Error</p>
-                        <p className="text-sm">Check connection</p>
-                      </div>
+                  ) : null}
+                </>
+              ) : camera.id === 3 ? (
+                <div className="relative w-full h-full">
+                  <video
+                    ref={video3Ref}
+                    src="/videos/viole.mp4" // Ensure the path is correct
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      console.error('Video error:', e);
+                      setVideoError(true);
+                    }}
+                  />
+                  {videoError && (
+                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-red-500 bg-opacity-50">
+                      <span className="text-white font-bold">Error loading video</span>
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <Camera className="h-12 w-12 mx-auto mb-2" />
-                    <p>{camera.status === 'online' ? 'No Feed Available' : 'Camera Offline'}</p>
-                  </div>
                 </div>
-              )}
+              ) : camera.id === 4 ? (
+                <div className="relative w-full h-full">
+                  <video
+                    ref={video4Ref}
+                    src="/videos/video3.mp4" // Verify this path is correct
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={(e) => {
+                      console.error('Video error:', e);
+                      setVideoError(true);
+                    }}
+                  />
+                  {videoError && (
+                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-red-500 bg-opacity-50">
+                      <span className="text-white font-bold">Error loading video</span>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         ))}

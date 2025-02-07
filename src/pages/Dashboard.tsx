@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Clock, CheckCircle, AlertOctagon, LucideIcon } from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle, AlertOctagon, LucideIcon, Camera } from 'lucide-react';
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -73,41 +73,79 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-4">Recent Alerts</h3>
           <div className="space-y-4">
-            {[1, 2, 3].map((_, index) => (
-              <div key={index} className="flex items-center justify-between border-b pb-4">
-                <div className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" />
-                  <div>
-                    <p className="font-medium">Motion Detected - Camera #12</p>
-                    <p className="text-sm text-gray-500">2 minutes ago</p>
-                  </div>
+            <div className="flex items-center justify-between border-b pb-4 bg-yellow-50 p-4 rounded-lg">
+              <div className="flex items-center">
+                <Camera className="h-5 w-5 text-gray-500 mr-3" />
+                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <p className="font-medium">Weapon detected</p>
+                  <p className="text-sm text-gray-500">Just now</p>
                 </div>
-                <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm">
-                  View
-                </button>
               </div>
-            ))}
+              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm" onClick={() => window.location.href='/cameras'}>
+                View
+              </button>
+            </div>
+            <div className="flex items-center justify-between border-b pb-4 bg-yellow-50 p-4 rounded-lg">
+              <div className="flex items-center">
+                <Camera className="h-5 w-5 text-gray-500 mr-3" />
+                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <p className="font-medium">Crowd detected</p>
+                  <p className="text-sm text-gray-500">Just now</p>
+                </div>
+              </div>
+              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm" onClick={() => window.location.href='/cameras'}>
+                View
+              </button>
+            </div>
+            <div className="flex items-center justify-between border-b pb-4 bg-yellow-50 p-4 rounded-lg">
+              <div className="flex items-center">
+                <Camera className="h-5 w-5 text-gray-500 mr-3" />
+                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <p className="font-medium">SOS gesture detected</p>
+                  <p className="text-sm text-gray-500">Just now</p>
+                </div>
+              </div>
+              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm" onClick={() => window.location.href='/cameras'}>
+                View
+              </button>
+            </div>
+            <div className="flex items-center justify-between border-b pb-4 bg-yellow-50 p-4 rounded-lg">
+              <div className="flex items-center">
+                <Camera className="h-5 w-5 text-gray-500 mr-3" />
+                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" />
+                <div>
+                  <p className="font-medium">Violence detected</p>
+                  <p className="text-sm text-gray-500">Just now</p>
+                </div>
+              </div>
+              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm" onClick={() => window.location.href='/cameras'}>
+                View
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4">System Status</h3>
+          <h3 className="text-lg font-semibold mb-4">Analytics Overview</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span>Cameras Online</span>
-              <span className="text-green-600">48/50</span>
+              <span>Cameras Active</span>
+              <span className="text-green-600">4/6</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>System Load</span>
-              <span className="text-yellow-600">75%</span>
+              <span>Alerts Today</span>
+              <span className="text-yellow-600">12</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>Storage Usage</span>
-              <span className="text-blue-600">62%</span>
+              <span>Average Response Time</span>
+              <span className="text-blue-600">5 min</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>Network Status</span>
-              <span className="text-green-600">Optimal</span>
+              <span>System Uptime</span>
+              <span className="text-green-600">99.9%</span>
             </div>
           </div>
         </div>

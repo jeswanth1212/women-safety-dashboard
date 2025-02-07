@@ -19,10 +19,22 @@ interface EmergencyService {
   type: 'police' | 'hospital' | 'fire_station';
 }
 
+interface Alert {
+  id: number;
+  name: string;
+  phone: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  message: string;
+  timestamp: string;
+}
+
 const Maps = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [emergencyServices, setEmergencyServices] = useState<EmergencyService[]>([]);
   const location = useLocation();
   const { centerLocation } = (location.state as LocationState) || {};
@@ -57,8 +69,7 @@ const Maps = () => {
 
   const fetchNearbyServices = async (lat: number, lon: number) => {
     try {
-      // Build Overpass API query for emergency services within 5km radius
-      const radius = 5000; // 5km in meters
+      const radius = 2000; // 2km in meters
       const query = `
         [out:json][timeout:25];
         (
@@ -70,7 +81,8 @@ const Maps = () => {
       `;
 
       const response = await axios.post('https://overpass-api.de/api/interpreter', query);
-      
+      console.log('Fetched emergency services:', response.data.elements);
+
       const services: EmergencyService[] = response.data.elements.map((element: any) => ({
         id: element.id,
         lat: element.lat,
@@ -84,6 +96,12 @@ const Maps = () => {
       console.error('Error fetching emergency services:', error);
     }
   };
+
+  useEffect(() => {
+    if (centerLocation) {
+      fetchNearbyServices(centerLocation.latitude, centerLocation.longitude);
+    }
+  }, [centerLocation]);
 
   // Create custom icons for different services
   const createCustomIcon = (color: string) => {
@@ -105,7 +123,7 @@ const Maps = () => {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/alerts');
+        const response = await axios.get('http://localhost:5000/alerts');
         setAlerts(response.data);
       } catch (error) {
         console.error('Error fetching alerts:', error);
@@ -113,23 +131,15 @@ const Maps = () => {
     };
 
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 10000);
+    const interval = setInterval(fetchAlerts, 30000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Update markers when alerts or emergency services change
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clear existing markers
-    mapRef.current.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
-        mapRef.current?.removeLayer(layer);
-      }
-    });
-
-    // Add alert markers
+    // Add alert markers without clearing existing ones
     alerts.forEach((alert) => {
       const latitude = alert.location?.latitude;
       const longitude = alert.location?.longitude;
@@ -147,28 +157,34 @@ const Maps = () => {
         `).addTo(mapRef.current);
       }
     });
+  }, [alerts]);
 
-    // Add emergency service markers
-    emergencyServices.forEach((service) => {
-      if (mapRef.current) {
-        const marker = L.marker([service.lat, service.lon], {
-          icon: serviceIcons[service.type]
-        });
+  useEffect(() => {
+    if (mapRef.current) {
+      // Clear existing markers
+      mapRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Marker && layer.options.icon?.options.className !== 'custom-marker') {
+          mapRef.current?.removeLayer(layer);
+        }
+      });
 
-        marker.bindPopup(`
-          <strong>${service.type.replace('_', ' ').toUpperCase()}</strong><br>
-          ${service.name}
-        `).addTo(mapRef.current);
-      }
-    });
-  }, [alerts, emergencyServices]);
+      // Add new markers
+      emergencyServices.forEach(service => {
+        const icon = serviceIcons[service.type];
+        L.marker([service.lat, service.lon], { icon })
+          .addTo(mapRef.current!)
+          .bindPopup(`${service.name} (${service.type})`);
+      });
+    }
+  }, [emergencyServices]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <h1>DEFENSHE</h1>
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div ref={mapContainerRef} style={{ height: '80vh', width: '100%' }} />
-          <div className="p-4 border-t">
+          <div ref={mapContainerRef} style={{ height: '80vh', width: '100%', position: 'relative' }} />
+          <div className="p-4 border-t" style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 0 10px rgba(0,0,0,0.1)' }}>
             <h3 className="text-lg font-semibold mb-2">Map Legend</h3>
             <div className="flex gap-6">
               <div className="flex items-center gap-2">
@@ -176,7 +192,7 @@ const Maps = () => {
                 <span>Alert Location</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-[#964B00]" />
+                <div className="w-4 h-4 rounded-full bg-[#996600]" />
                 <span>Police Station</span>
               </div>
               <div className="flex items-center gap-2">

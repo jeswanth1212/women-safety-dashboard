@@ -29,7 +29,7 @@ const Sidebar = () => {
       <div className="flex flex-col w-64">
         <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r">
           <div className="flex items-center flex-shrink-0 px-4">
-            <span className="text-xl font-semibold">SecureWatch</span>
+            <span className="text-xl font-semibold">DEFENSHE</span>
           </div>
           <div className="mt-5 flex-1 flex flex-col">
             <nav className="flex-1 px-2 space-y-1">
