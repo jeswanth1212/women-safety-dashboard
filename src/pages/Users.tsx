@@ -1,113 +1,126 @@
-import { Users as UsersIcon, UserPlus, Shield, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users as UsersIcon, Phone, MapPin, Mail } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
+
+interface Contact {
+  name: string;
+  phoneNumber: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  age: number;
+  address: string;
+  contacts: Contact[];
+}
 
 const Users = () => {
-  const users = [
-    { id: 1, name: 'John Smith', role: 'Admin', status: 'Active', lastActive: '2 mins ago' },
-    { id: 2, name: 'Sarah Wilson', role: 'Moderator', status: 'Active', lastActive: '5 mins ago' },
-    { id: 3, name: 'Mike Johnson', role: 'Viewer', status: 'Offline', lastActive: '1 hour ago' }
-  ];
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const fetchedUsers: User[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedUsers.push({
+          id: doc.id,
+          name: data.name || 'Unknown',
+          phoneNumber: data.phoneNumber || 'N/A',
+          age: data.age || 0,
+          address: data.address || 'N/A',
+          contacts: data.contacts || []
+        });
+      });
+      setUsers(fetchedUsers);
+      setLoading(false);
+      console.log('Fetched users from Firestore:', fetchedUsers);
+    }, (error) => {
+      console.error('Error fetching users:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-600">Loading users...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 bg-gray-100 min-h-screen space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          <UserPlus className="h-5 w-5 mr-2" />
-          Add User
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full mr-4">
-              <UsersIcon className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Users</p>
-              <p className="text-2xl font-bold">24</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full mr-4">
-              <Activity className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Active Now</p>
-              <p className="text-2xl font-bold">12</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex items-center">
-            <div className="p-3 bg-purple-100 rounded-full mr-4">
-              <Shield className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Roles</p>
-              <p className="text-2xl font-bold">3</p>
-            </div>
-          </div>
+        <h2 className="text-3xl font-bold text-gray-800">Registered Users</h2>
+        <div className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">
+          <UsersIcon className="h-5 w-5 mr-2" />
+          <span className="font-semibold">{users.length} Total Users</span>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="p-6">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">User</th>
-                <th className="text-left py-3 px-4">Role</th>
-                <th className="text-left py-3 px-4">Status</th>
-                <th className="text-left py-3 px-4">Last Active</th>
-                <th className="text-left py-3 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center">
-                      <img
-                        className="h-8 w-8 rounded-full mr-3"
-                        src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                        alt={user.name}
-                      />
-                      <span>{user.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      user.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'Moderator' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`flex items-center ${
-                      user.status === 'Active' ? 'text-green-600' : 'text-gray-500'
-                    }`}>
-                      <span className={`h-2 w-2 rounded-full mr-2 ${
-                        user.status === 'Active' ? 'bg-green-600' : 'bg-gray-500'
-                      }`}></span>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-gray-500">{user.lastActive}</td>
-                  <td className="py-3 px-4">
-                    <button className="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
-                    <button className="text-red-600 hover:text-red-800">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {users.length === 0 ? (
+        <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
+          No users found in the system
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {users.map((user) => (
+            <div key={user.id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+              {/* User Header */}
+              <div className="flex items-center mb-4">
+                <img
+                  className="h-16 w-16 rounded-full mr-4"
+                  src={`https://ui-avatars.com/api/?name=${user.name}&background=random&size=128`}
+                  alt={user.name}
+                />
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">{user.name}</h3>
+                  <p className="text-sm text-gray-500">Age: {user.age}</p>
+                </div>
+              </div>
+
+              {/* User Details */}
+              <div className="space-y-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <Phone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="text-sm font-medium text-gray-800">{user.phoneNumber}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-500">Address</p>
+                    <p className="text-sm font-medium text-gray-800">{user.address}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Emergency Contacts */}
+              {user.contacts && user.contacts.length > 0 && (
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Emergency Contacts</h4>
+                  <div className="space-y-2">
+                    {user.contacts.map((contact, index) => (
+                      <div key={index} className="bg-gray-50 p-2 rounded">
+                        <p className="text-sm font-medium text-gray-800">{contact.name}</p>
+                        <p className="text-xs text-gray-600">{contact.phoneNumber}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

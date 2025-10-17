@@ -5,11 +5,13 @@ import {
   AlertTriangle, 
   Map, 
   Camera, 
-  FileText,
+  BarChart3,
   Users,
+  Radio,
   Settings,
   HelpCircle,
-  Bell
+  FileWarning,
+  Route
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -18,7 +20,10 @@ const Sidebar = () => {
     { icon: AlertTriangle, label: 'Alerts', path: '/alerts' },
     { icon: Map, label: 'Maps', path: '/maps' },
     { icon: Camera, label: 'Cameras', path: '/cameras' },
-    { icon: FileText, label: 'Reports', path: '/reports' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Radio, label: 'Response Teams', path: '/response-teams' },
+    { icon: Route, label: 'Patrols', path: '/patrols' },
+    { icon: FileWarning, label: 'Issues', path: '/issues' },
     { icon: Users, label: 'Users', path: '/users' },
     { icon: Settings, label: 'Settings', path: '/settings' },
     { icon: HelpCircle, label: 'Help', path: '/help' },

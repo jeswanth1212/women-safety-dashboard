@@ -1,12 +1,15 @@
 import { Bell, Settings, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -26,6 +29,7 @@ const Navbar = () => {
             <button 
               onClick={handleLogout}
               className="p-2 text-gray-500 hover:text-gray-600"
+              title="Logout"
             >
               <LogOut className="w-6 h-6" />
             </button>
